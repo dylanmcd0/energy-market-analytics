@@ -1,0 +1,58 @@
+name: Update Data
+
+on:
+  schedule:
+    # Runs daily at 14:00 UTC (after EIA releases weekly reports on Thursdays)
+    - cron: "0 14 * * *"
+  workflow_dispatch: # Allow manual triggers from the Actions tab
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required for the git push step
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Sync virtual environment
+        # uv reads pyproject.toml and installs all dependencies into .venv
+        run: uv sync
+
+      # ── Futures ────────────────────────────────────────────────────────────
+      - name: Fetch NG futures (yfinance)
+        run: uv run python pipeline/fetch_futures.py
+
+      # ── EIA storage ────────────────────────────────────────────────────────
+      - name: Fetch EIA natural gas storage
+        run: uv run python pipeline/fetch_eia.py
+        env:
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+
+      # ── NOAA degree days ────────────────────────────────────────────────────
+      - name: Fetch NOAA HDD/CDD
+        run: uv run python pipeline/fetch_noaa.py
+        env:
+          NOAA_CDO_TOKEN: ${{ secrets.NOAA_CDO_TOKEN }}
+
+      # ── CFTC COT ────────────────────────────────────────────────────────────
+      - name: Fetch CFTC Commitments of Traders
+        run: uv run python pipeline/fetch_cftc.py
+
+      # ── Commit updated parquet files ────────────────────────────────────────
+      - name: Commit and push updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          # Only commit if there are actual changes; --quiet suppresses output
+          # when nothing changed.  The exit-code trick avoids a non-zero exit
+          # from "nothing to commit."
+          git diff --staged --quiet || git commit -m "chore: update data [skip ci]"
+          git push
