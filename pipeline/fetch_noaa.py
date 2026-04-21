@@ -108,15 +108,36 @@ def fetch_cdo_data(
 
     all_rows: list[dict] = []
     offset = 1  # CDO uses 1-based offset
+    max_retries = 5
 
     while True:
         params = {**base_params, "offset": offset}
-        resp = requests.get(
-            f"{CDO_BASE_URL}/data",
-            headers=headers,
-            params=params,
-            timeout=30,
-        )
+
+        for attempt in range(max_retries):
+            resp = requests.get(
+                f"{CDO_BASE_URL}/data",
+                headers=headers,
+                params=params,
+                timeout=30,
+            )
+            if resp.status_code == 429:
+                wait = 2 ** attempt
+                print(
+                    f"  WARNING: CDO returned 429 for {station_id} "
+                    f"(offset={offset}), retrying in {wait}s (attempt {attempt + 1}/{max_retries})...",
+                    file=sys.stderr,
+                )
+                time.sleep(wait)
+                continue
+            break
+        else:
+            # All retries exhausted on 429
+            print(
+                f"  WARNING: CDO returned 429 for {station_id} "
+                f"(offset={offset}) after {max_retries} retries. Skipping.",
+                file=sys.stderr,
+            )
+            break
 
         # 400 can mean no data for this station/period; treat as empty
         if resp.status_code == 400:
@@ -240,6 +261,8 @@ def main() -> None:
         else:
             print(f"{len(df)} records")
             frames.append(df)
+        # Pause between stations to stay within the CDO API rate limit
+        time.sleep(0.5)
 
     if not frames:
         print("ERROR: No temperature data returned from any station.", file=sys.stderr)
