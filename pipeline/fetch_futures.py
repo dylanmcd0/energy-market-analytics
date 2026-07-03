@@ -31,7 +31,7 @@ import yfinance as yf
 OUTPUT_PATH = "data/futures.parquet"
 
 # Rolling window in years
-ROLLING_YEARS = 5
+ROLLING_YEARS = 2
 
 # CME month codes (1-based index = calendar month)
 MONTH_CODES = {

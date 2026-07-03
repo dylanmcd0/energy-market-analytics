@@ -52,7 +52,7 @@ CDO_BASE_URL = "https://www.ncdc.noaa.gov/cdo-web/api/v2"
 CDO_PAGE_SIZE = 1000
 
 OUTPUT_PATH = "data/noaa_degree_days.parquet"
-ROLLING_YEARS = 5
+ROLLING_YEARS = 2
 
 # Representative major US stations (GHCND station IDs).
 # These span the key natural gas consuming regions of the country.

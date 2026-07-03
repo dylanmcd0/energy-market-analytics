@@ -34,7 +34,7 @@ import pandas as pd
 import requests
 
 OUTPUT_PATH = "data/cftc_cot.parquet"
-ROLLING_YEARS = 5
+ROLLING_YEARS = 2
 
 # CFTC market code for Henry Hub Natural Gas futures (NYMEX)
 NG_MARKET_CODE = "023651"

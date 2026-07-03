@@ -1,5 +1,5 @@
 [project]
-name = "curve-lab"
+name = "energy-market-analytics"
 version = "0.1.0"
 description = "Natural gas spread analysis and modeling"
 readme = "README.md"

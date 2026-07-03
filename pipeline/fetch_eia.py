@@ -38,7 +38,7 @@ EIA_BASE_URL = "https://api.eia.gov/v2"
 STORAGE_SERIES = "NG.NW2_EPG0_SWO_R48_BCF.W"
 
 OUTPUT_PATH = "data/eia_storage.parquet"
-ROLLING_YEARS = 5
+ROLLING_YEARS = 2
 
 
 def fetch_eia_series(api_key: str, series_id: str, start: str, end: str) -> pd.DataFrame:
