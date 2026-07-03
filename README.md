@@ -1,32 +1,28 @@
-# curve-lab
+# energy-market-analytics
 
-Natural gas spread analysis and modeling.
+Learning US energy markets through data and analysis.
 
-## Overview
+A data pipeline and analysis toolkit for understanding natural gas markets:
+fundamentals, spreads, seasonality, and positioning.
 
-curve-lab is a data pipeline and modeling project for natural gas markets.
-It collects and maintains a rolling 5-year dataset covering:
+## Data sources
 
-- **NG Futures** — front month, next month, and 12-month deferred (via yfinance)
-- **EIA Storage** — weekly working gas in storage, net change, 5-year average
-- **NOAA Weather** — weekly heating degree days (HDD) and cooling degree days (CDD)
-- **CFTC COT** — Commitments of Traders disaggregated report for NG futures
-
-Data is stored as parquet files in `/data` and refreshed daily via GitHub Actions.
+- **NG Futures** — prices (via yfinance)
+- **EIA Storage** — weekly inventory
+- **NOAA Weather** — heating/cooling degree days
+- **CFTC COT** — trader positioning
 
 ## Structure
 
 ```
-curve-lab/
-├── data/           # Parquet files (rolling 5-year window, overwritten daily)
-├── pipeline/       # Data fetching scripts (one per source)
-├── notebooks/      # Analysis notebooks
-├── models/         # Spread and pricing models
-└── site/           # Web output (future)
+├── pipeline/       # Data fetching (runs daily via GitHub Actions)
+├── data/           # Parquet files (5-year rolling window)
+├── analysis/       # Notebooks exploring energy fundamentals
+└── .github/        # Automation
 ```
 
-## Quick start
+## Next: Build analysis notebooks
 
-See [SETUP.md](SETUP.md) for environment setup, API key registration, and
-instructions for running the pipeline locally.
+See [SETUP.md](SETUP.md) to get data pipelines running, then we'll build
+analysis notebooks one at a time.
 

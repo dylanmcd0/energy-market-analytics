@@ -1,4 +1,4 @@
-# SETUP.md — curve-lab environment and secrets setup
+# SETUP.md — energy-market-analytics environment and secrets setup
 
 This document covers everything you need to run the pipeline locally and
 configure the GitHub Actions workflow.
@@ -7,7 +7,7 @@ configure the GitHub Actions workflow.
 
 ## 1. Install uv
 
-curve-lab uses [uv](https://docs.astral.sh/uv/) for Python environment and
+energy-market-analytics uses [uv](https://docs.astral.sh/uv/) for Python environment and
 dependency management.
 
 ### macOS / Linux
