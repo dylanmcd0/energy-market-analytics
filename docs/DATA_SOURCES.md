@@ -10,7 +10,7 @@ The pipeline ingests four complementary datasets that collectively provide signa
 |---|---|---|---|
 | Futures Prices | Daily | Current and forward market prices across contract months | `fetch_futures.py` |
 | Storage Levels | Weekly | Underground inventory (physical supply buffer) | `fetch_eia.py` |
-| Degree Days | Weekly | Temperature-driven demand proxy | `fetch_noaa.py` |
+| Degree Days | Weekly | Temperature-driven demand proxy | `fetch_weather.py` |
 | COT Positions | Weekly | Large trader positioning and sentiment | `fetch_cftc.py` |
 
 ---

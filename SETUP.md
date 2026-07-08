@@ -62,19 +62,10 @@ EIA_API_KEY=your_key_here
 
 ---
 
-### NOAA Climate Data Online token (required for `fetch_noaa.py`)
+### Weather data (`fetch_weather.py`)
 
-1. Register for a free token at: <https://www.ncdc.noaa.gov/cdo-web/token>
-2. Enter your email address; the token arrives in your inbox within minutes.
-3. The token is a short alphanumeric string (e.g. `AbCdEfGhIjKlMnOp`).
-
-**Local use:** Add to your `.env` file:
-
-```
-NOAA_CDO_TOKEN=your_token_here
-```
-
-**GitHub Actions:** Add as a repository secret named `NOAA_CDO_TOKEN`.
+No API key required. `fetch_weather.py` uses the free Open-Meteo Historical
+Weather API, which requires no registration or token.
 
 ---
 
@@ -91,10 +82,10 @@ Add the following secrets:
 | Secret name     | Value                        |
 |-----------------|------------------------------|
 | `EIA_API_KEY`   | Your EIA API key             |
-| `NOAA_CDO_TOKEN`| Your NOAA CDO token          |
 
 The CFTC pipeline requires no API key (public flat files).
 The yfinance pipeline requires no API key.
+The weather (Open-Meteo) pipeline requires no API key.
 
 ---
 
@@ -105,18 +96,18 @@ With your `.env` file populated, run each fetcher in order:
 ```bash
 uv run python pipeline/fetch_futures.py
 uv run python pipeline/fetch_eia.py
-uv run python pipeline/fetch_noaa.py
+uv run python pipeline/fetch_weather.py
 uv run python pipeline/fetch_cftc.py
 ```
 
 Each script writes a parquet file to `data/`:
 
-| Script                     | Output file                  |
-|----------------------------|------------------------------|
-| `pipeline/fetch_futures.py`| `data/futures.parquet`       |
-| `pipeline/fetch_eia.py`    | `data/eia_storage.parquet`   |
-| `pipeline/fetch_noaa.py`   | `data/noaa_degree_days.parquet` |
-| `pipeline/fetch_cftc.py`   | `data/cftc_cot.parquet`      |
+| Script                       | Output file                 |
+|------------------------------|------------------------------|
+| `pipeline/fetch_futures.py`  | `data/futures.parquet`      |
+| `pipeline/fetch_eia.py`      | `data/eia_storage.parquet`  |
+| `pipeline/fetch_weather.py`  | `data/degree_days.parquet`  |
+| `pipeline/fetch_cftc.py`     | `data/cftc_cot.parquet`     |
 
 Run `fetch_futures.py` and `fetch_cftc.py` first — they have no external API
 key dependencies and will confirm your environment is working before you test
@@ -148,7 +139,7 @@ import pandas as pd
 
 pd.read_parquet("data/futures.parquet").tail()
 pd.read_parquet("data/eia_storage.parquet").tail()
-pd.read_parquet("data/noaa_degree_days.parquet").tail()
+pd.read_parquet("data/degree_days.parquet").tail()
 pd.read_parquet("data/cftc_cot.parquet").tail()
 ```
 
@@ -159,7 +150,6 @@ pd.read_parquet("data/cftc_cot.parquet").tail()
 | Problem | Fix |
 |---------|-----|
 | `EIA_API_KEY not set` | Add the key to `.env` or set it as an env var |
-| `NOAA_CDO_TOKEN not set` | Register and add the token as described above |
 | CFTC download fails (404) | The current year's file may not yet be published — the script skips missing years |
 | yfinance returns no data | Yahoo Finance occasionally throttles; wait and retry |
 | `uv: command not found` | Follow the install steps in §1 |

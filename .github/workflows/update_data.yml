@@ -35,11 +35,9 @@ jobs:
         env:
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
 
-      # ── NOAA degree days ────────────────────────────────────────────────────
-      - name: Fetch NOAA HDD/CDD
-        run: uv run python pipeline/fetch_noaa.py
-        env:
-          NOAA_CDO_TOKEN: ${{ secrets.NOAA_CDO_TOKEN }}
+      # ── Weather degree days ─────────────────────────────────────────────────
+      - name: Fetch HDD/CDD
+        run: uv run python pipeline/fetch_weather.py
 
       # ── CFTC COT ────────────────────────────────────────────────────────────
       - name: Fetch CFTC Commitments of Traders
