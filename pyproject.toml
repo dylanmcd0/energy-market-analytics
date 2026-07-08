@@ -18,6 +18,8 @@ dev = [
     "jupyter>=1.0",
     "ipykernel>=6.0",
     "notebook>=7.0",
+    "matplotlib>=3.9",
+    "nbconvert>=7.16",
 ]
 
 [build-system]
