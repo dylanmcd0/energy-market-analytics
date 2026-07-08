@@ -30,6 +30,7 @@ or gas-demand weights should be applied.
 """
 
 import sys
+import time
 from datetime import date, timedelta
 
 import pandas as pd
@@ -40,6 +41,10 @@ ARCHIVE_BASE_URL = "https://archive-api.open-meteo.com/v1/archive"
 
 OUTPUT_PATH = "data/degree_days.parquet"
 ROLLING_YEARS = 2
+
+REQUEST_TIMEOUT = 60
+MAX_RETRIES = 3
+RETRY_BACKOFF_SECONDS = 5
 
 # Representative major US locations (name, latitude, longitude).
 # These span the key natural gas consuming regions of the country.
@@ -89,7 +94,20 @@ def fetch_station_data(
         "timezone": "America/New_York",
     }
 
-    resp = requests.get(ARCHIVE_BASE_URL, params=params, timeout=30)
+    resp = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            resp = requests.get(ARCHIVE_BASE_URL, params=params, timeout=REQUEST_TIMEOUT)
+            break
+        except requests.exceptions.RequestException as exc:
+            if attempt == MAX_RETRIES - 1:
+                print(
+                    f"  WARNING: Open-Meteo request failed for {station} after "
+                    f"{MAX_RETRIES} attempts ({exc}). Skipping.",
+                    file=sys.stderr,
+                )
+                return pd.DataFrame()
+            time.sleep(RETRY_BACKOFF_SECONDS * (attempt + 1))
 
     if resp.status_code != 200:
         print(

@@ -114,9 +114,11 @@ def download_year(year: int) -> pd.DataFrame:
         with zf.open(txt_files[0]) as f:
             raw = pd.read_csv(f, low_memory=False)
 
-    # Filter to natural gas futures (market code column name may vary slightly)
+    # Filter to natural gas futures. CFTC_Contract_Market_Code holds the numeric
+    # contract code (e.g. "023651"); CFTC_Market_Code is a different field
+    # holding the exchange abbreviation (e.g. "NYME") and must not be used here.
     code_col = next(
-        (c for c in raw.columns if "CFTC_Market_Code" in c or "Commodity_Code" in c),
+        (c for c in raw.columns if c == "CFTC_Contract_Market_Code"),
         None,
     )
     if code_col is None:
