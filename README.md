@@ -1,9 +1,11 @@
 # energy-market-analytics
 
-Learning US energy markets through data and analysis.
+Learning US natural gas and power derivatives markets through data and analysis.
 
-A data pipeline and analysis toolkit for understanding natural gas markets:
-fundamentals, spreads, seasonality, and positioning.
+A public-data research toolkit for understanding natural gas and power market
+fundamentals, curve structure, seasonality, positioning, and derivatives risk.
+It is for reproducible learning and analysis, not automated trading or a
+connection to employer systems, data, or execution.
 
 ## Data sources
 
@@ -11,6 +13,9 @@ fundamentals, spreads, seasonality, and positioning.
 - **EIA Storage** — weekly inventory
 - **NOAA Weather** — heating/cooling degree days
 - **CFTC COT** — trader positioning
+
+The current pipeline is natural-gas-first. Power data will be added only when a
+source has clear access terms, timestamp semantics, and a documented contract.
 
 ## Structure
 
@@ -21,8 +26,85 @@ fundamentals, spreads, seasonality, and positioning.
 └── .github/        # Automation
 ```
 
-## Next: Build analysis notebooks
+## Project Roadmap
 
-See [SETUP.md](SETUP.md) to get data pipelines running, then we'll build
-analysis notebooks one at a time.
+The objective is a small set of defensible research tools, not a broad market
+dashboard or a directional-prediction product.
 
+### 1. Storage and Weather Monitor
+
+Build the first reproducible natural-gas brief from the existing EIA storage
+and degree-day data.
+
+- Inventory versus seasonal norms and year-ago levels
+- Injection/withdrawal pace and regional context where source data supports it
+- HDD/CDD context and explicit reporting-date cutoffs
+- A short Markdown report with charts and stated limitations
+
+**Done when:** A user can reproduce a weekly storage brief from committed data
+and understand the source, units, timing, and transformations.
+
+### 2. Futures Curves and Calendar Spreads
+
+Turn the NG futures data into transparent term-structure analysis.
+
+- Prompt-versus-deferred, seasonal, and calendar-spread calculations
+- Curve snapshots, curve-change charts, and roll-date conventions
+- Clear distinction between continuous futures and individual contract series
+- CSV input support for additional timestamped curve data without scraping or
+  redistributing restricted exchange data
+
+**Done when:** The repository can explain a curve move with reproducible inputs
+and unambiguous spread definitions.
+
+### 3. Power Market Foundation
+
+Add power deliberately, after documenting a suitable public or user-supplied
+source rather than treating it as an extension of the NG ticker.
+
+- Source manifest covering geography, hub, delivery period, units, timestamps,
+  access terms, and known gaps
+- Peak/off-peak and seasonal structure where the source supports it
+- Separate power data contracts and analysis modules from natural-gas code
+
+**Done when:** A power dataset has the same provenance and reproducibility bar
+as the existing gas inputs.
+
+### 4. Gas-to-Power and Derivatives Scenarios
+
+Connect the two markets through explicit, educational assumptions.
+
+- Heat-rate and spark-spread scenarios with user-supplied assumptions
+- Futures, calendar-spread, and option scenario analysis
+- Black-76 pricing, implied volatility, and Greeks for futures options
+- Clear separation between a model input, a market observation, and an output
+
+**Done when:** A reader can reproduce a scenario and identify every assumption
+without mistaking it for a trade recommendation.
+
+### 5. Evaluation and Research Briefs
+
+Make the outputs useful as research artifacts.
+
+- Event studies around storage releases and documented market cutoffs
+- Separate descriptive analysis from out-of-sample evaluation
+- Regular concise briefs that state evidence, uncertainty, and next questions
+
+**Done when:** The repository contains several dated, reproducible briefs rather
+than a collection of exploratory notebooks.
+
+## Guardrails
+
+- Use only public, licensed, or personally supplied data. Do not include
+  employer data, systems, trade ideas, positions, or credentials.
+- Preserve source provenance, units, timestamps, and transformation logic.
+- Do not claim predictive edge or give trading recommendations without a
+  documented, out-of-sample evaluation.
+- Prioritize one finished module at a time. The next active work is the Storage
+  and Weather Monitor.
+
+## Getting Started
+
+See [SETUP.md](SETUP.md) to get the data pipelines running. Then begin with the
+Storage and Weather Monitor, using the source details in
+[docs/DATA_SOURCES.md](docs/DATA_SOURCES.md).
