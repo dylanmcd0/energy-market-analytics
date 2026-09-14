@@ -451,6 +451,7 @@ name = "energy-market-analytics"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "matplotlib" },
     { name = "pandas" },
     { name = "pyarrow" },
     { name = "python-dateutil" },
@@ -472,6 +473,7 @@ dev = [
 requires-dist = [
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.0" },
     { name = "jupyter", marker = "extra == 'dev'", specifier = ">=1.0" },
+    { name = "matplotlib", specifier = ">=3.9" },
     { name = "matplotlib", marker = "extra == 'dev'", specifier = ">=3.9" },
     { name = "nbconvert", marker = "extra == 'dev'", specifier = ">=7.16" },
     { name = "notebook", marker = "extra == 'dev'", specifier = ">=7.0" },

@@ -54,6 +54,7 @@ jobs:
             Review PR ${{ github.event.issue.number }} in ${{ github.repository }}.
             Use the triggering comment as the review request:
             ${{ github.event.comment.body }}
+            Review only. Do not edit files, commit, push, or resolve threads.
           claude_args: |
             --model claude-sonnet-5
             --max-turns 60

@@ -38,7 +38,9 @@ EIA_BASE_URL = "https://api.eia.gov/v2"
 STORAGE_SERIES = "NG.NW2_EPG0_SWO_R48_BCF.W"
 
 OUTPUT_PATH = "data/eia_storage.parquet"
-ROLLING_YEARS = 2
+ROLLING_YEARS = 5
+BASELINE_YEARS = 5
+FETCH_BUFFER_DAYS = 14
 
 
 def fetch_eia_series(api_key: str, series_id: str, start: str, end: str) -> pd.DataFrame:
@@ -99,7 +101,7 @@ def fetch_eia_series(api_key: str, series_id: str, start: str, end: str) -> pd.D
 
 
 def compute_5yr_average(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute a rolling 5-year average for each calendar week of the year.
+    """Compute a rolling 5-year average for each ISO week of the year.
 
     The EIA publishes a 5-year average for each storage week (EIA uses
     a 5-year rolling average of the same calendar week across the prior
@@ -110,20 +112,30 @@ def compute_5yr_average(df: pd.DataFrame) -> pd.DataFrame:
         df: DataFrame with columns [date, value] for the storage series.
 
     Returns:
-        DataFrame with columns [date, value_5yr_avg] aligned to the same
-        dates as the input.
+        DataFrame with columns [date, value_5yr_avg, value_5yr_count] aligned
+        to the same dates as the input.
     """
     df = df.copy()
-    df["week"] = df["date"].dt.isocalendar().week.astype(int)
-    df["year"] = df["date"].dt.year
+    iso = df["date"].dt.isocalendar()
+    df["iso_week"] = iso.week.astype(int)
+    df["iso_year"] = iso.year.astype(int)
 
-    # For each row compute mean of the same ISO week across the prior 5 years
-    def _avg(row: pd.Series) -> float:
-        mask = (df["week"] == row["week"]) & (df["year"].between(row["year"] - 5, row["year"] - 1))
-        return df.loc[mask, "value"].mean()
+    grouped = df.groupby(["iso_week", "iso_year"])["value"].mean().to_dict()
+    averages = []
+    counts = []
 
-    df["value_5yr_avg"] = df.apply(_avg, axis=1)
-    return df[["date", "value_5yr_avg"]]
+    for row in df.itertuples(index=False):
+        values = [
+            grouped[(row.iso_week, year)]
+            for year in range(row.iso_year - BASELINE_YEARS, row.iso_year)
+            if (row.iso_week, year) in grouped
+        ]
+        averages.append(sum(values) / len(values) if values else float("nan"))
+        counts.append(len(values))
+
+    df["value_5yr_avg"] = averages
+    df["value_5yr_count"] = counts
+    return df[["date", "value_5yr_avg", "value_5yr_count"]]
 
 
 def main() -> None:
@@ -135,8 +147,12 @@ def main() -> None:
         sys.exit(1)
 
     end_date = date.today().isoformat()
-    # Fetch an extra year so the 5-yr average has enough history
-    start_date = (date.today() - timedelta(days=(ROLLING_YEARS + 1) * 365)).isoformat()
+    # Fetch enough history to compute same-week 5-year averages before trimming
+    # the committed data window.
+    start_date = (
+        date.today()
+        - timedelta(days=(ROLLING_YEARS + BASELINE_YEARS) * 365 + FETCH_BUFFER_DAYS)
+    ).isoformat()
 
     print(f"Fetching EIA storage series from {start_date} to {end_date}")
     storage = fetch_eia_series(api_key, STORAGE_SERIES, start_date, end_date)

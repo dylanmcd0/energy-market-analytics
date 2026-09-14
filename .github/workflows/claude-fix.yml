@@ -1,0 +1,90 @@
+name: Claude fix
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  fix:
+    if: >
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '@claude fix') &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: claude-fix-${{ github.event.issue.number }}
+      cancel-in-progress: true
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Read PR branch
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          head_repo="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json headRepository --jq '.headRepository.nameWithOwner')"
+          head_ref="$(gh pr view "$PR_NUMBER" --repo "$REPOSITORY" --json headRefName --jq '.headRefName')"
+
+          if [ "$head_repo" != "$REPOSITORY" ]; then
+            echo "Claude fix is limited to same-repository PR branches." >&2
+            exit 1
+          fi
+
+          echo "head_ref=$head_ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ steps.pr.outputs.head_ref }}
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.9.29"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Sync project dependencies
+        env:
+          UV_CACHE_DIR: .uv-cache
+        run: uv sync
+
+      - name: Mark fix request as seen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: >-
+          gh api --method POST
+          repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/reactions
+          -f content=eyes
+
+      - uses: anthropics/claude-code-action@v1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Fix PR ${{ github.event.issue.number }} in ${{ github.repository }}.
+
+            Use the triggering comment as the request:
+            ${{ github.event.comment.body }}
+
+            Work on the checked-out PR branch. Read unresolved review threads,
+            PR comments, repository guidance, and the changed files. Implement
+            focused fixes for valid feedback. Run the relevant validation.
+            Commit and push any changes to the PR branch. Do not merge the PR.
+            Comment with the changes made and validation run. Resolve review
+            threads only when the pushed change directly addresses them.
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 80
+            --allowedTools "Bash(gh:*),Bash(git:*),Bash(uv:*),Bash(python:*),Read,Grep,Glob,Edit,Write"
