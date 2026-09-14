@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -12,11 +14,11 @@ A data pipeline + analysis toolkit for learning US natural gas markets: fundamen
 ## Commands
 
 ```bash
-uv sync                              # install/update the environment from pyproject.toml
-uv run python pipeline/fetch_futures.py   # NG futures prices (yfinance, no key)
-uv run python pipeline/fetch_eia.py       # EIA storage levels (needs EIA_API_KEY)
-uv run python pipeline/fetch_weather.py   # HDD/CDD via Open-Meteo (no key)
-uv run python pipeline/fetch_cftc.py      # CFTC COT positioning (no key)
+UV_CACHE_DIR=.uv-cache uv sync
+UV_CACHE_DIR=.uv-cache uv run python pipeline/fetch_futures.py   # NG futures prices (yfinance, no key)
+UV_CACHE_DIR=.uv-cache uv run python pipeline/fetch_eia.py       # EIA storage levels (needs EIA_API_KEY)
+UV_CACHE_DIR=.uv-cache uv run python pipeline/fetch_weather.py   # HDD/CDD via Open-Meteo (no key)
+UV_CACHE_DIR=.uv-cache uv run python pipeline/fetch_cftc.py      # CFTC COT positioning (no key)
 ```
 
 There is no test suite, linter, or type checker configured in this repo. Verify pipeline changes by running the script directly and inspecting the resulting parquet file, e.g.:
@@ -48,3 +50,19 @@ Output parquet files (`data/futures.parquet`, `eia_storage.parquet`, `degree_day
 - `docs/PRICE_DISCOVERY.md` — the intended framework for combining the four datasets into a price narrative; this is the spec for the analysis notebooks that don't exist yet.
 - `docs/LEARNING_LOG.md` — running research notes; check for context before duplicating analysis.
 - `SETUP.md` — environment setup and troubleshooting for the pipeline scripts.
+
+## Claude Code
+
+Use `/clear` between unrelated tasks. For a substantial change, inspect the
+relevant fetcher, current parquet schema, and docs before editing. Use `/memory`
+to confirm this file loaded if project guidance appears missing.
+
+Prefer GitHub CLI for pull requests. Verify auth first:
+
+```bash
+gh auth status
+gh pr create --fill
+```
+
+If `gh auth status` fails, push the branch and hand off the compare URL instead
+of implying that a PR was opened.
