@@ -35,7 +35,7 @@ pd.read_parquet("data/degree_days.parquet").tail()
 Each `pipeline/fetch_*.py` script is a standalone, self-contained module with the same shape:
 
 - A module docstring explaining the source, series/endpoint used, and any domain-specific transforms.
-- Module-level constants `OUTPUT_PATH` (where the parquet lands in `data/`) and `ROLLING_YEARS` (currently `2` everywhere — the window of history kept; older rows are dropped on each run, not appended to indefinitely).
+- Module-level constants `OUTPUT_PATH` (where the parquet lands in `data/`) and `ROLLING_YEARS` (the window of history kept; older rows are dropped on each run, not appended to indefinitely). The retained window can differ by fetcher when the data contract requires it; `fetch_eia.py` keeps a longer storage history to support same-week 5-year baselines.
 - A `main()` that fetches, transforms, and writes to `OUTPUT_PATH`, printing a summary (`tail()`) for quick sanity-checking.
 
 There is no shared library code between the fetchers — each duplicates its own HTTP/pagination/date-window logic on purpose (they hit unrelated APIs with different pagination and auth schemes). When editing one fetcher, don't assume changes need to propagate to the others.
@@ -56,6 +56,12 @@ Output parquet files (`data/futures.parquet`, `eia_storage.parquet`, `degree_day
 Use `/clear` between unrelated tasks. For a substantial change, inspect the
 relevant fetcher, current parquet schema, and docs before editing. Use `/memory`
 to confirm this file loaded if project guidance appears missing.
+
+PR automation uses two explicit comment triggers:
+
+- `@claude review` asks Claude to review only. It should not push fixes.
+- `@claude fix` asks Claude to read unresolved feedback, edit the PR branch, run
+  validation, commit, push, and comment with the result.
 
 Prefer GitHub CLI for pull requests. Verify auth first:
 

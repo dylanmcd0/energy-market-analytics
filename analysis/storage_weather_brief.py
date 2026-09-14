@@ -17,7 +17,7 @@ import pandas as pd
 DEFAULT_STORAGE_PATH = Path("data/eia_storage.parquet")
 DEFAULT_WEATHER_PATH = Path("data/degree_days.parquet")
 DEFAULT_OUTPUT_DIR = Path("docs/briefs")
-DEFAULT_CHARTS_DIR = DEFAULT_OUTPUT_DIR / "assets"
+MAX_WEATHER_STALENESS_DAYS = 7
 
 
 @dataclass(frozen=True)
@@ -25,6 +25,8 @@ class BriefMetrics:
     storage_date: pd.Timestamp
     storage_week_start: pd.Timestamp
     weather_week_start: pd.Timestamp
+    weather_staleness_days: int
+    weather_is_stale: bool
     working_gas_bcf: float
     net_change_bcf: float
     storage_5yr_avg_bcf: float
@@ -50,7 +52,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--storage", type=Path, default=DEFAULT_STORAGE_PATH)
     parser.add_argument("--weather", type=Path, default=DEFAULT_WEATHER_PATH)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
-    parser.add_argument("--charts-dir", type=Path, default=DEFAULT_CHARTS_DIR)
+    parser.add_argument(
+        "--charts-dir",
+        type=Path,
+        default=None,
+        help="Directory for chart PNGs. Defaults to a date-specific assets directory under --output-dir.",
+    )
     return parser.parse_args()
 
 
@@ -116,6 +123,8 @@ def build_metrics(storage: pd.DataFrame, weather: pd.DataFrame) -> BriefMetrics:
 
     latest_weather = weather_candidates.iloc[-1]
     weather_week_start = pd.Timestamp(latest_weather["week_start"]).normalize()
+    weather_staleness_days = int((storage_week_start - weather_week_start).days)
+    weather_is_stale = weather_staleness_days > MAX_WEATHER_STALENESS_DAYS
 
     storage_5yr_avg = float(latest_storage["value_5yr_avg"])
     working_gas = float(latest_storage["working_gas_bcf"])
@@ -140,6 +149,8 @@ def build_metrics(storage: pd.DataFrame, weather: pd.DataFrame) -> BriefMetrics:
         storage_date=storage_date,
         storage_week_start=storage_week_start,
         weather_week_start=weather_week_start,
+        weather_staleness_days=weather_staleness_days,
+        weather_is_stale=weather_is_stale,
         working_gas_bcf=working_gas,
         net_change_bcf=float(latest_storage["net_change_bcf"]),
         storage_5yr_avg_bcf=storage_5yr_avg,
@@ -170,7 +181,12 @@ def fmt_number(value: float | None, digits: int = 0, signed: bool = False) -> st
     return f"{value:{sign},.{digits}f}"
 
 
-def make_charts(storage: pd.DataFrame, weather: pd.DataFrame, charts_dir: Path) -> dict[str, Path]:
+def make_charts(
+    storage: pd.DataFrame,
+    weather: pd.DataFrame,
+    charts_dir: Path,
+    weather_cutoff: pd.Timestamp,
+) -> dict[str, Path]:
     charts_dir.mkdir(parents=True, exist_ok=True)
     chart_paths = {
         "storage": charts_dir / "storage_vs_5yr.png",
@@ -202,7 +218,7 @@ def make_charts(storage: pd.DataFrame, weather: pd.DataFrame, charts_dir: Path) 
     fig.savefig(chart_paths["net_change"], dpi=160)
     plt.close(fig)
 
-    recent_weather = weather.tail(104)
+    recent_weather = weather[weather["week_start"] <= weather_cutoff].tail(104)
     fig, ax = plt.subplots(figsize=(9, 4.8))
     ax.plot(recent_weather["week_start"], recent_weather["hdd_weekly"], label="HDD")
     ax.plot(recent_weather["week_start"], recent_weather["cdd_weekly"], label="CDD")
@@ -219,7 +235,7 @@ def make_charts(storage: pd.DataFrame, weather: pd.DataFrame, charts_dir: Path) 
 
 
 def relative_chart_path(report_path: Path, chart_path: Path) -> str:
-    return chart_path.relative_to(report_path.parent).as_posix()
+    return os.path.relpath(chart_path, start=report_path.parent)
 
 
 def render_markdown(metrics: BriefMetrics, report_path: Path, chart_paths: dict[str, Path]) -> str:
@@ -232,6 +248,11 @@ def render_markdown(metrics: BriefMetrics, report_path: Path, chart_paths: dict[
         "5-year same-week average"
         if metrics.hdd_avg_count >= 5 and metrics.cdd_avg_count >= 5
         else "available same-week average"
+    )
+    weather_alignment = (
+        f"stale by {metrics.weather_staleness_days} days"
+        if metrics.weather_is_stale
+        else f"within {metrics.weather_staleness_days} days"
     )
 
     return f"""# Natural Gas Storage and Weather Brief - {metrics.storage_date.date()}
@@ -264,6 +285,7 @@ def render_markdown(metrics: BriefMetrics, report_path: Path, chart_paths: dict[
 | Metric | Value |
 |---|---:|
 | Aligned weather week | {metrics.weather_week_start.date()} |
+| Weather alignment status | {weather_alignment} |
 | HDD | {fmt_number(metrics.hdd_weekly, 1)} |
 | HDD versus {weather_average_label} | {fmt_number(metrics.hdd_vs_5yr, 1, signed=True)} |
 | HDD average observations | {metrics.hdd_avg_count} |
@@ -297,7 +319,8 @@ def main() -> None:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     report_path = args.output_dir / f"{metrics.storage_date.date()}-storage-weather-brief.md"
-    chart_paths = make_charts(storage, weather, args.charts_dir)
+    charts_dir = args.charts_dir or args.output_dir / "assets" / str(metrics.storage_date.date())
+    chart_paths = make_charts(storage, weather, charts_dir, metrics.weather_week_start)
     report_path.write_text(render_markdown(metrics, report_path, chart_paths), encoding="utf-8")
     print(f"Wrote {report_path}")
 

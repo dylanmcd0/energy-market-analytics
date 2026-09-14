@@ -19,15 +19,16 @@
 | Difference from year ago | -79 Bcf |
 | 5-year average observations | 5 same-week observations |
 
-![Storage versus 5-year average](assets/storage_vs_5yr.png)
+![Storage versus 5-year average](assets/2026-09-04/storage_vs_5yr.png)
 
-![Weekly storage change](assets/storage_net_change.png)
+![Weekly storage change](assets/2026-09-04/storage_net_change.png)
 
 ## Weather
 
 | Metric | Value |
 |---|---:|
 | Aligned weather week | 2026-08-31 |
+| Weather alignment status | within 0 days |
 | HDD | 2.4 |
 | HDD versus available same-week average | -7.2 |
 | HDD average observations | 1 |
@@ -35,7 +36,7 @@
 | CDD versus available same-week average | +33.2 |
 | CDD average observations | 1 |
 
-![Weekly degree days](assets/degree_days.png)
+![Weekly degree days](assets/2026-09-04/degree_days.png)
 
 ## Cutoffs and Provenance
 
