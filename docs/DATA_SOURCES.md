@@ -43,6 +43,7 @@ The pipeline ingests four complementary datasets that collectively provide signa
 - Working gas in underground storage (Lower 48 states, in Bcf = billion cubic feet)
 - Weekly net change in inventory
 - 5-year historical average for the same calendar week (benchmark for "normal" levels)
+- Count of observations used in each 5-year same-week average
 
 **How it informs pricing:**
 - High storage → excess supply → downward pressure on prices

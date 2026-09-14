@@ -38,7 +38,8 @@ EIA_BASE_URL = "https://api.eia.gov/v2"
 STORAGE_SERIES = "NG.NW2_EPG0_SWO_R48_BCF.W"
 
 OUTPUT_PATH = "data/eia_storage.parquet"
-ROLLING_YEARS = 2
+ROLLING_YEARS = 5
+BASELINE_YEARS = 5
 
 
 def fetch_eia_series(api_key: str, series_id: str, start: str, end: str) -> pd.DataFrame:
@@ -110,8 +111,8 @@ def compute_5yr_average(df: pd.DataFrame) -> pd.DataFrame:
         df: DataFrame with columns [date, value] for the storage series.
 
     Returns:
-        DataFrame with columns [date, value_5yr_avg] aligned to the same
-        dates as the input.
+        DataFrame with columns [date, value_5yr_avg, value_5yr_count] aligned
+        to the same dates as the input.
     """
     df = df.copy()
     df["week"] = df["date"].dt.isocalendar().week.astype(int)
@@ -119,11 +120,20 @@ def compute_5yr_average(df: pd.DataFrame) -> pd.DataFrame:
 
     # For each row compute mean of the same ISO week across the prior 5 years
     def _avg(row: pd.Series) -> float:
-        mask = (df["week"] == row["week"]) & (df["year"].between(row["year"] - 5, row["year"] - 1))
+        mask = (df["week"] == row["week"]) & (
+            df["year"].between(row["year"] - BASELINE_YEARS, row["year"] - 1)
+        )
         return df.loc[mask, "value"].mean()
 
+    def _count(row: pd.Series) -> int:
+        mask = (df["week"] == row["week"]) & (
+            df["year"].between(row["year"] - BASELINE_YEARS, row["year"] - 1)
+        )
+        return int(df.loc[mask, "value"].count())
+
     df["value_5yr_avg"] = df.apply(_avg, axis=1)
-    return df[["date", "value_5yr_avg"]]
+    df["value_5yr_count"] = df.apply(_count, axis=1)
+    return df[["date", "value_5yr_avg", "value_5yr_count"]]
 
 
 def main() -> None:
@@ -135,8 +145,9 @@ def main() -> None:
         sys.exit(1)
 
     end_date = date.today().isoformat()
-    # Fetch an extra year so the 5-yr average has enough history
-    start_date = (date.today() - timedelta(days=(ROLLING_YEARS + 1) * 365)).isoformat()
+    # Fetch enough history to compute same-week 5-year averages before trimming
+    # the committed data window.
+    start_date = (date.today() - timedelta(days=(ROLLING_YEARS + BASELINE_YEARS) * 365)).isoformat()
 
     print(f"Fetching EIA storage series from {start_date} to {end_date}")
     storage = fetch_eia_series(api_key, STORAGE_SERIES, start_date, end_date)
