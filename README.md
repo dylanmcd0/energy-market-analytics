@@ -25,6 +25,9 @@ UV_CACHE_DIR=.uv-cache uv run python analysis/storage_weather_brief.py
 
 It writes a dated Markdown brief and charts under `docs/briefs/`.
 
+The scheduled data workflow also regenerates this brief when EIA storage data
+changes, so routine storage releases become dated research artifacts.
+
 ## Structure
 
 ```
