@@ -35,6 +35,15 @@ jobs:
         env:
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
 
+      - name: Check whether storage changed
+        id: storage
+        run: |
+          if git diff --quiet -- data/eia_storage.parquet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       # ── Weather degree days ─────────────────────────────────────────────────
       - name: Fetch HDD/CDD
         run: uv run python pipeline/fetch_weather.py
@@ -43,12 +52,20 @@ jobs:
       - name: Fetch CFTC Commitments of Traders
         run: uv run python pipeline/fetch_cftc.py
 
-      # ── Commit updated parquet files ────────────────────────────────────────
-      - name: Commit and push updated data
+      # ── Brief generation ───────────────────────────────────────────────────
+      - name: Generate storage/weather brief
+        if: steps.storage.outputs.changed == 'true'
+        run: uv run python analysis/storage_weather_brief.py
+
+      # ── Commit updated data and generated briefs ───────────────────────────
+      - name: Commit and push updated artifacts
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
+          if [ "${{ steps.storage.outputs.changed }}" = "true" ]; then
+            git add docs/briefs/
+          fi
           # Only commit if there are actual changes; --quiet suppresses output
           # when nothing changed.  The exit-code trick avoids a non-zero exit
           # from "nothing to commit."
